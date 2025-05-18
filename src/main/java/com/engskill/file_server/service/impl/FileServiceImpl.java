@@ -27,7 +27,6 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public FileStore upload(MultipartFile file, String bucketName) throws Exception {
-        // 1. Tạo bucket nếu chưa có
         if (!minioClient.bucketExists(BucketExistsArgs.builder().bucket(bucketName).build())) {
             minioClient.makeBucket(MakeBucketArgs.builder().bucket(bucketName).build());
         }

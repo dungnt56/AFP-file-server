@@ -19,7 +19,7 @@ public class FileController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<FileStore> upload(@RequestParam("file") MultipartFile file,
+    public ResponseEntity<FileStore> upload(@RequestParam("fileUp") MultipartFile file,
                                             @RequestParam("schema") String schema) throws Exception {
         return ResponseEntity.ok(fileService.upload(file, schema));
     }
