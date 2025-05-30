@@ -1,6 +1,7 @@
 package com.engskill.file_server.service.impl;
 
 import com.engskill.file_server.entity.FileStore;
+import com.engskill.file_server.entity.LoadFile;
 import com.engskill.file_server.repository.FileStoreRepository;
 import com.engskill.file_server.service.FileService;
 import io.minio.*;
@@ -62,11 +63,26 @@ public class FileServiceImpl implements FileService {
         int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
         return String.format("%.1f %s", size / Math.pow(1024, digitGroups), units[digitGroups]);
     }
-
     @Override
-    public byte[] download(String schema, String fileId) throws Exception {
-        try (InputStream is = minioClient.getObject(GetObjectArgs.builder().bucket(schema).object(fileId).build())) {
-            return is.readAllBytes();
+    public LoadFile download(String fileId, String schema) throws Exception {
+        try {
+            // Lấy thông tin object từ MinIO
+            StatObjectResponse stat = minioClient.statObject(
+                    StatObjectArgs.builder().bucket(schema).object(fileId).build()
+            );
+            Optional<FileStore> fileStore = fileRepo.findByFileId(fileId);
+            // Lấy InputStream của object
+            InputStream inputStream = minioClient.getObject(
+                    GetObjectArgs.builder().bucket(schema).object(fileId).build()
+            );
+            // Xác định Content-Type (hoặc dùng giá trị mặc định)
+            String contentType = stat.contentType() != null ? stat.contentType() : "application/octet-stream";
+            // Lấy tên file từ metadata hoặc fileId
+            String filename = stat.userMetadata().getOrDefault("filename", fileStore.isEmpty() ? fileId : fileStore.get().getFileName());
+            return new LoadFile(inputStream.readAllBytes(), filename, contentType);
+        } catch (Exception e) {
+//            logger.error("Lỗi khi tải file từ MinIO: fileId={}, schema={}", fileId, schema, e);
+            return null; // Controller sẽ xử lý null bằng 404
         }
     }
 
